@@ -1,4 +1,4 @@
-const fetch = require('cross-fetch')
+const axios = require('axios')
 
 /**
  * Добавление продаж / создание чеков прихода
@@ -62,16 +62,17 @@ class NalogAPI {
   auth (login, password) {
     if (this.authPromise) { return this.authPromise }
 
-    this.authPromise = fetch(this.apiUrl + '/auth/lkfl', {
+    this.authPromise = axios({
+      url: this.apiUrl + '/auth/lkfl',
       method: 'POST',
       headers: {
         accept: 'application/json, text/plain, */*',
         'accept-language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
-        'content-type': 'application/json',
+        'content-type': 'application/json'
       },
       referrer: 'https://lknpd.nalog.ru/',
       referrerPolicy: 'strict-origin-when-cross-origin',
-      body: JSON.stringify({
+      data: JSON.stringify({
         username: login,
         password: password,
         deviceInfo: {
@@ -83,7 +84,7 @@ class NalogAPI {
           }
         }
       })
-    }).then(r => r.json()).then(response => {
+    }).then(r => r.data).then(response => {
       if (!response.refreshToken) {
         throw new Error((response.message || 'Не получилось авторизоваться'))
       }
@@ -125,7 +126,8 @@ class NalogAPI {
       refreshToken: this.refreshToken
     }
 
-    const response = await fetch(this.apiUrl + '/auth/token', {
+    const response = await axios({
+      url: this.apiUrl + '/auth/token',
       method: 'POST',
       headers: {
         accept: 'application/json, text/plain, */*',
@@ -134,8 +136,8 @@ class NalogAPI {
       },
       referrer: 'https://lknpd.nalog.ru/sales',
       referrerPolicy: 'strict-origin-when-cross-origin',
-      body: JSON.stringify(tokenPayload)
-    }).then(r => r.json()).catch(console.error)
+      data: JSON.stringify(tokenPayload)
+    }).then(r => r.data).catch(console.error)
 
     if (response.refreshToken) { this.refreshToken = response.refreshToken }
 
@@ -165,12 +167,12 @@ class NalogAPI {
       },
       referrer: 'https://lknpd.nalog.ru/sales/create',
       referrerPolicy: 'strict-origin-when-cross-origin',
-      body: JSON.stringify(payload)
+      data: JSON.stringify(payload)
     }
 
     if (method === 'GET') delete params.body
 
-    return fetch(this.apiUrl + '/' + endpoint, params).then(r => r.json())
+    return axios(this.apiUrl + '/' + endpoint, params).then(r => r.data)
   }
 
   /**
@@ -208,7 +210,7 @@ class NalogAPI {
       jsonUrl: `${this.apiUrl}/receipt/${this.INN}/${response.approvedReceiptUuid}/json`,
       printUrl: `${this.apiUrl}/receipt/${this.INN}/${response.approvedReceiptUuid}/print`
     }
-    result.data = await fetch(result.jsonUrl).then(r => r.json())
+    result.data = await axios(result.jsonUrl).then(r => r.data)
 
     return result
   }
